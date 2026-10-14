@@ -1,742 +1,696 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anggaran Cepat - Catatan Keuangan Realtime</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anggaran Cepat - Platform Catatan Keuangan Realtime</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
         }
-    </script>
-    <style>
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-    </style>
+      }
+    }
+  </script>
+  <style>
+    .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(229, 231, 235, 0.8); }
+    .type-btn-active { border-color: #4f46e5; background-color: #eef2ff; color: #4338ca; }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
-    <!-- Header Navigation -->
-    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-wallet text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-none tracking-tight">Anggaran Cepat</h1>
-                    <span class="text-xs text-indigo-400 font-medium">Platform Catatan Keuangan Realtime</span>
-                </div>
-            </div>
-            
-            <!-- Firebase Connection Status Badge -->
-            <div class="flex items-center space-x-3">
-                <div class="flex flex-col text-right">
-                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">Status Database</span>
-                    <span id="db-status" class="text-xs font-semibold text-amber-400 flex items-center justify-end gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Menghubungkan...
-                    </span>
-                </div>
-                <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
-                    <i class="fa-solid fa-database"></i>
-                </div>
-            </div>
+  <!-- MODAL AUTHENTICATION (LOGIN / REGISTER) -->
+  <div id="authModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 relative overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-200">
+          <i class="fa-solid me-0 fa-wallet text-xl"></i>
         </div>
-    </header>
+        <h2 class="text-2xl font-bold text-slate-900">Selamat Datang!</h2>
+        <p class="text-sm text-slate-500 mt-1">Masuk untuk mengelola catatan keuangan kamu</p>
+      </div>
 
-    <!-- Main Content Container -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <!-- Google Sign In Button -->
+      <button id="btnGoogleAuth" onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition duration-200 shadow-sm mb-4">
+        <svg class="w-5 h-5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span>Lanjutkan dengan Google</span>
+      </button>
 
-        <!-- 1. DASHBOARD RINGKASAN SALDO -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            
-            <!-- Card: Saldo Saat Ini -->
-            <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-2xl p-5 shadow-lg shadow-indigo-200 relative overflow-hidden transition-all duration-300 hover:scale-[1.01]">
-                <div class="absolute -right-4 -bottom-4 opacity-15 text-7xl text-white pointer-events-none">
-                    <i class="fa-solid fa-sack-dollar"></i>
-                </div>
-                <p class="text-indigo-200 text-xs font-medium uppercase tracking-wider mb-1">Total Saldo Saat Ini</p>
-                <h3 id="display-balance" class="text-2xl sm:text-3xl font-extrabold tracking-tight">Rp 0</h3>
-                <div class="mt-4 pt-3 border-t border-indigo-500/40 flex items-center justify-between text-xs text-indigo-100">
-                    <span>Status Kas:</span>
-                    <span id="balance-status" class="font-semibold bg-indigo-900/50 px-2 py-0.5 rounded text-indigo-200">Aman</span>
-                </div>
-            </div>
+      <div class="relative flex py-2 items-center mb-4">
+        <div class="flex-grow border-t border-slate-200"></div>
+        <span class="flex-shrink mx-3 text-xs text-slate-400 font-medium">atau Email</span>
+        <div class="flex-grow border-t border-slate-200"></div>
+      </div>
 
-            <!-- Card: Modal Awal / Deposit -->
-            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Modal Awal / Deposit</span>
-                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <i class="fa-solid fa-vault text-sm"></i>
-                    </div>
-                </div>
-                <h3 id="display-deposit" class="text-xl sm:text-2xl font-bold text-slate-800">Rp 0</h3>
-                <p class="text-xs text-slate-400 mt-2">Penyertaan dana/modal awal</p>
-            </div>
-
-            <!-- Card: Total Pemasukan -->
-            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Pemasukan</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <i class="fa-solid fa-arrow-down-left text-sm"></i>
-                    </div>
-                </div>
-                <h3 id="display-income" class="text-xl sm:text-2xl font-bold text-emerald-600">Rp 0</h3>
-                <p class="text-xs text-slate-400 mt-2">Dari seluruh transaksi masuk</p>
-            </div>
-
-            <!-- Card: Total Pengeluaran -->
-            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Pengeluaran</span>
-                    <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-                        <i class="fa-solid fa-arrow-up-right text-sm"></i>
-                    </div>
-                </div>
-                <h3 id="display-expense" class="text-xl sm:text-2xl font-bold text-rose-600">Rp 0</h3>
-                <p class="text-xs text-slate-400 mt-2">Dari seluruh belanja/operasional</p>
-            </div>
-
-        </section>
-
-        <!-- 2. CHART VISUAL INTERAKTIF 7 HARI -->
-        <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
-                <div>
-                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-indigo-600"></i>
-                        Grafik Keuangan 7 Hari Terakhir
-                    </h2>
-                    <p class="text-xs text-slate-500">Visualisasi tren akumulasi dana masuk & keluar harian</p>
-                </div>
-                <!-- Toggle Button Bar vs Line -->
-                <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-medium self-start sm:self-auto">
-                    <button id="chart-type-bar" class="chart-toggle-btn px-3 py-1.5 rounded-lg bg-white shadow-xs text-slate-800 transition-all flex items-center gap-1.5">
-                        <i class="fa-solid fa-chart-column"></i>
-                        <span>Grafik Batang</span>
-                    </button>
-                    <button id="chart-type-line" class="chart-toggle-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5">
-                        <i class="fa-solid fa-chart-line"></i>
-                        <span>Grafik Garis</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Canvas Chart Container -->
-            <div class="relative w-full h-[260px] sm:h-[300px]">
-                <canvas id="financialChart"></canvas>
-            </div>
-        </section>
-
-        <!-- 3. FORM INPUT & TABEL RIWAYAT -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            <!-- FORM INPUT TRANSAKSI (5 Cols) -->
-            <div class="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm sticky top-24">
-                <div class="flex items-center space-x-3 mb-5 pb-3 border-b border-slate-100">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                        <i class="fa-solid fa-plus text-sm"></i>
-                    </div>
-                    <h2 class="text-base font-bold text-slate-800">Catat Transaksi Baru</h2>
-                </div>
-
-                <form id="transaction-form" class="space-y-4">
-                    
-                    <!-- Tipe Transaksi -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">Tipe Transaksi</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="type" value="deposit" class="peer hidden">
-                                <div class="p-2.5 text-center text-xs font-medium rounded-xl border border-slate-200 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 transition-all flex flex-col items-center gap-1">
-                                    <i class="fa-solid fa-vault"></i>
-                                    Deposit
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="type" value="income" class="peer hidden" checked>
-                                <div class="p-2.5 text-center text-xs font-medium rounded-xl border border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all flex flex-col items-center gap-1">
-                                    <i class="fa-solid fa-circle-arrow-down"></i>
-                                    Pemasukan
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="type" value="expense" class="peer hidden">
-                                <div class="p-2.5 text-center text-xs font-medium rounded-xl border border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 peer-checked:text-rose-700 transition-all flex flex-col items-center gap-1">
-                                    <i class="fa-solid fa-circle-arrow-up"></i>
-                                    Pengeluaran
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Nominal / Jumlah -->
-                    <div>
-                        <label for="amount" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Nominal (Rp)</label>
-                        <div class="relative rounded-xl shadow-sm">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-semibold text-sm">
-                                Rp
-                            </div>
-                            <input type="number" id="amount" placeholder="0" min="1" required
-                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 font-semibold text-base transition-all">
-                        </div>
-                    </div>
-
-                    <!-- Kategori & Tanggal -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label for="category" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Kategori</label>
-                            <select id="category" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-700 transition-all">
-                                <option value="" disabled selected>Pilih Kategori</option>
-                                <option value="Modal Awal">Modal Awal / Injeksi Kas</option>
-                                <option value="Penjualan / Omset">Penjualan / Omset</option>
-                                <option value="Gaji & Bonus">Gaji & Bonus</option>
-                                <option value="Operasional Usaha">Operasional Usaha</option>
-                                <option value="Makanan & Minuman">Makanan & Minuman</option>
-                                <option value="Belanja Stok / Bahan">Belanja Stok / Bahan</option>
-                                <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
-                                <option value="Lainnya">Lainnya</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="date" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Tanggal</label>
-                            <input type="date" id="date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-700 transition-all">
-                        </div>
-                    </div>
-
-                    <!-- Catatan Tambahan -->
-                    <div>
-                        <label for="notes" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Catatan (Keterangan)</label>
-                        <input type="text" id="notes" placeholder="Contoh: Pembelian bahan baku resep A" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs text-slate-700 transition-all">
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit" id="submit-btn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span>Simpan ke Database</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- 4. TABEL RIWAYAT TRANSAKSI (7 Cols) -->
-            <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-                
-                <!-- Table Header & Filters -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                    <div>
-                        <h2 class="text-base font-bold text-slate-800">Riwayat Transaksi Realtime</h2>
-                        <p class="text-xs text-slate-500">Tersinkronisasi otomatis dari Firebase Cloud Firestore</p>
-                    </div>
-
-                    <!-- Filter Type Buttons -->
-                    <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-medium self-start sm:self-auto">
-                        <button id="filter-all" class="filter-btn px-3 py-1.5 rounded-lg bg-white shadow-xs text-slate-800 transition-all">Semua</button>
-                        <button id="filter-deposit" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Deposit</button>
-                        <button id="filter-income" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Masuk</button>
-                        <button id="filter-expense" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Keluar</button>
-                    </div>
-                </div>
-
-                <!-- Table Container -->
-                <div class="overflow-x-auto min-h-[300px] max-h-[500px]">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 bg-slate-50/50">
-                                <th class="py-2.5 px-3">Tanggal / Kategori</th>
-                                <th class="py-2.5 px-3">Tipe</th>
-                                <th class="py-2.5 px-3">Keterangan</th>
-                                <th class="py-2.5 px-3 text-right">Nominal</th>
-                                <th class="py-2.5 px-2 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transaction-list" class="divide-y divide-slate-100 text-xs">
-                            <!-- Data rendered dynamically -->
-                        </tbody>
-                    </table>
-
-                    <!-- Empty State Placeholder -->
-                    <div id="empty-state" class="hidden flex-col items-center justify-center py-12 text-center text-slate-400">
-                        <i class="fa-solid fa-receipt text-4xl mb-3 text-slate-300"></i>
-                        <p class="font-medium text-sm text-slate-600">Belum Ada Transaksi</p>
-                        <p class="text-xs">Gunakan form di samping untuk menyimpan catatan pertama.</p>
-                    </div>
-                </div>
-
-            </div>
-
+      <!-- Email Auth Form -->
+      <form id="authForm" onsubmit="handleEmailAuth(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">EMAIL</label>
+          <input type="email" id="authEmail" required placeholder="nama@email.com" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">PASSWORD</label>
+          <input type="password" id="authPassword" required placeholder="••••••••" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
         </div>
 
-    </main>
+        <div id="authError" class="hidden text-xs text-rose-500 bg-rose-50 p-2.5 rounded-lg border border-rose-100"></div>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 mt-auto py-4">
-        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-            &copy; 2026 Anggaran Cepat. Powered by Firebase Cloud Firestore & Vercel.
+        <button type="submit" id="btnSubmitAuth" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition duration-200 shadow-md shadow-indigo-100 text-sm mt-2">
+          Masuk
+        </button>
+      </form>
+
+      <!-- Toggle Mode Auth -->
+      <div class="mt-4 text-center">
+        <button id="btnToggleAuthMode" onclick="toggleAuthMode()" class="text-xs text-indigo-600 font-medium hover:underline">
+          Belum punya akun? Daftar di sini
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-wallet text-lg"></i>
         </div>
-    </footer>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">Anggaran Cepat</h1>
+          <p class="text-xs text-slate-400">Platform Catatan Keuangan Realtime</p>
+        </div>
+      </div>
 
-    <!-- FIREBASE & APPLICATION LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            deleteDoc, 
-            doc, 
-            onSnapshot 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+      <!-- Right User Menu & Status -->
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:flex items-center space-x-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700">
+          <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span id="dbStatusText" class="text-slate-300">Menghubungkan...</span>
+        </div>
 
-        // Konfigurasi Firebase Milik Pengguna
-        const firebaseConfig = {
-            apiKey: "AIzaSyCVFDI7Q0hOBuk6tzVqfGVnWUUsdsltcvI",
-            authDomain: "anggaran-cepat-app.firebaseapp.com",
-            projectId: "anggaran-cepat-app",
-            storageBucket: "anggaran-cepat-app.firebasestorage.app",
-            messagingSenderId: "578620345071",
-            appId: "1:578620345071:web:1e4a0451f8416fa255a91a"
-        };
+        <!-- User Info Bar -->
+        <div id="userInfoContainer" class="hidden flex items-center space-x-3 border-l border-slate-800 pl-4">
+          <div class="text-right hidden md:block">
+            <div id="userDisplayName" class="text-xs font-semibold text-slate-200">User</div>
+            <div id="userDisplayEmail" class="text-[10px] text-slate-400">email@app.com</div>
+          </div>
+          <button onclick="handleLogout()" class="text-xs bg-slate-800 hover:bg-rose-600/20 hover:text-rose-400 text-slate-300 p-2 rounded-lg border border-slate-700 transition" title="Keluar">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-        // Inisialisasi Firebase & Firestore
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        // Application State
-        let transactions = [];
-        let currentFilter = 'all';
-        let currentChartType = 'bar';
-        let chartInstance = null;
-        const today = new Date();
+    <!-- TOP CARDS: RINGKASAN SALDO -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="glass-card rounded-2xl p-5 shadow-sm border border-slate-200 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl"><i class="fa-solid fa-coins"></i></div>
+        <p class="text-xs font-medium text-indigo-100 uppercase tracking-wider">Total Saldo Saat Ini</p>
+        <h3 id="cardTotalBalance" class="text-2xl font-bold mt-1">Rp 0</h3>
+        <div class="mt-4 flex items-center justify-between text-xs text-indigo-200 border-t border-indigo-500/40 pt-2">
+          <span>Status Kas:</span>
+          <span id="cardStatusBadge" class="px-2 py-0.5 rounded bg-indigo-500/50 text-white font-medium">Aman</span>
+        </div>
+      </div>
 
-        // DOM Elements
-        const dbStatusEl = document.getElementById('db-status');
-        const formEl = document.getElementById('transaction-form');
-        const submitBtn = document.getElementById('submit-btn');
+      <div class="glass-card rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Modal Awal / Deposit</p>
+          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm"><i class="fa-solid fa-vault"></i></div>
+        </div>
+        <h3 id="cardDeposit" class="text-xl font-bold text-slate-900 mt-2">Rp 0</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Penyertaan dana/modal awal</p>
+      </div>
 
-        // Set default date input into today
-        document.getElementById('date').valueAsDate = today;
+      <div class="glass-card rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pemasukan</p>
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-down-left"></i></div>
+        </div>
+        <h3 id="cardIncome" class="text-xl font-bold text-emerald-600 mt-2">Rp 0</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Dari seluruh transaksi masuk</p>
+      </div>
 
-        // Formatter Helpers
-        function formatRupiah(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                maximumFractionDigits: 0
-            }).format(amount);
-        }
+      <div class="glass-card rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pengeluaran</p>
+          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-up-right"></i></div>
+        </div>
+        <h3 id="cardExpense" class="text-xl font-bold text-rose-600 mt-2">Rp 0</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Dari seluruh belanja/operasional</p>
+      </div>
+    </div>
 
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            const options = { day: 'numeric', month: 'short', year: 'numeric' };
-            return new Date(dateStr).toLocaleDateString('id-ID', options);
-        }
+    <!-- VISUAL CHART SECTION -->
+    <div class="glass-card rounded-2xl p-5 shadow-sm border border-slate-200">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-indigo-600"></i>
+            Grafik Keuangan 7 Hari Terakhir
+          </h2>
+          <p class="text-xs text-slate-500">Visualisasi tren akumulasi dana masuk & keluar harian</p>
+        </div>
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
+          <button id="btnChartBar" onclick="setChartType('bar')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-sm transition">
+            <i class="fa-solid fa-chart-column mr-1"></i> Grafik Batang
+          </button>
+          <button id="btnChartLine" onclick="setChartType('line')" class="px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg hover:text-slate-900 transition">
+            <i class="fa-solid fa-chart-line mr-1"></i> Grafik Garis
+          </button>
+        </div>
+      </div>
+      <div class="relative h-64 w-full">
+        <canvas id="financeChart"></canvas>
+      </div>
+    </div>
 
-        function getYYYYMMDD(dateObj) {
-            return dateObj.toISOString().split('T')[0];
-        }
+    <!-- BOTTOM SECTION: INPUT FORM & TRANSACTION TABLE -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        // =================================================================
-        // REALTIME DATABASE LISTENER (FIRESTORE)
-        // =================================================================
-        function initRealtimeListener() {
-            // Ref: /artifacts/{appId}/public/data/transactions atau koleksi root publik
-            const transRef = collection(db, "transactions");
+      <!-- FORM INPUT TRANSAKSI (4 COLUMNS) -->
+      <div class="lg:col-span-5 glass-card rounded-2xl p-5 shadow-sm border border-slate-200 self-start">
+        <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-plus"></i>
+          </span>
+          Catat Transaksi Baru
+        </h2>
 
-            onSnapshot(transRef, (snapshot) => {
-                transactions = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+        <form id="transactionForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+          <!-- Tipe Transaksi Radio Selector -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-2">TIPE TRANSAKSI</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="selectType('deposit')" id="btnTypeDeposit" class="type-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-200 hover:border-indigo-200 transition text-slate-600">
+                <i class="fa-solid fa-vault text-sm mb-1"></i>
+                <span class="text-xs font-semibold">Deposit</span>
+              </button>
+              <button type="button" onclick="selectType('income')" id="btnTypeIncome" class="type-btn type-btn-active flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-200 hover:border-indigo-200 transition text-slate-600">
+                <i class="fa-solid fa-circle-arrow-down text-sm mb-1"></i>
+                <span class="text-xs font-semibold">Pemasukan</span>
+              </button>
+              <button type="button" onclick="selectType('expense')" id="btnTypeExpense" class="type-btn flex flex-col items-center justify-center p-2.5 rounded-xl border border-slate-200 hover:border-indigo-200 transition text-slate-600">
+                <i class="fa-solid fa-circle-arrow-up text-sm mb-1"></i>
+                <span class="text-xs font-semibold">Pengeluaran</span>
+              </button>
+            </div>
+          </div>
 
-                // Visual Status Connected
-                dbStatusEl.className = "text-xs font-semibold text-emerald-400 flex items-center justify-end gap-1.5";
-                dbStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Firestore Terhubung`;
+          <!-- Nominal Input -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">NOMINAL (RP)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold text-sm">Rp</span>
+              <input type="text" id="inputAmount" required oninput="formatCurrencyInput(this)" placeholder="0" class="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-slate-900 font-semibold text-sm">
+            </div>
+          </div>
 
-                renderApp();
-            }, (error) => {
-                console.error("Firestore Error: ", error);
-                dbStatusEl.className = "text-xs font-semibold text-rose-400 flex items-center justify-end gap-1.5";
-                dbStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> Gagal Terhubung`;
-            });
-        }
+          <!-- Kategori & Tanggal -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">KATEGORI</label>
+              <select id="inputCategory" required class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-xs text-slate-800">
+                <option value="">Pilih Kategori</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">TANGGAL</label>
+              <input type="date" id="inputDate" required class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-xs text-slate-800">
+            </div>
+          </div>
 
-        // =================================================================
-        // CHART.JS LOGIC
-        // =================================================================
-        function getLast7DaysLabels() {
-            const labels = [];
-            const dates = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(today.getDate() - i);
-                dates.push(getYYYYMMDD(d));
-                labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }));
-            }
-            return { labels, dates };
-        }
+          <!-- Catatan / Keterangan -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">CATATAN (KETERANGAN)</label>
+            <input type="text" id="inputNotes" placeholder="Contoh: Pembelian bahan baku resi A" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-xs text-slate-800">
+          </div>
 
-        function calculate7DaysChartData() {
-            const { labels, dates } = getLast7DaysLabels();
-            const incomeData = new Array(7).fill(0);
-            const expenseData = new Array(7).fill(0);
+          <!-- Submit Button -->
+          <button type="submit" id="btnSubmit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition duration-200 shadow-md shadow-indigo-100 flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Simpan ke Database</span>
+          </button>
+        </form>
+      </div>
 
-            transactions.forEach(t => {
-                const dateIndex = dates.indexOf(t.date);
-                if (dateIndex !== -1) {
-                    const amount = Number(t.amount) || 0;
-                    if (t.type === 'income' || t.type === 'deposit') {
-                        incomeData[dateIndex] += amount;
-                    } else if (t.type === 'expense') {
-                        expenseData[dateIndex] += amount;
-                    }
-                }
-            });
-
-            return { labels, incomeData, expenseData };
-        }
-
-        function initChart() {
-            const ctx = document.getElementById('financialChart').getContext('2d');
-            const { labels, incomeData, expenseData } = calculate7DaysChartData();
-
-            chartInstance = new Chart(ctx, {
-                type: currentChartType,
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Pemasukan / Deposit (Rp)',
-                            data: incomeData,
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                            borderColor: '#10b981',
-                            borderWidth: 2,
-                            borderRadius: currentChartType === 'bar' ? 6 : 0,
-                            tension: 0.3,
-                            fill: currentChartType === 'line'
-                        },
-                        {
-                            label: 'Pengeluaran (Rp)',
-                            data: expenseData,
-                            backgroundColor: 'rgba(244, 63, 94, 0.7)',
-                            borderColor: '#f43f5e',
-                            borderWidth: 2,
-                            borderRadius: currentChartType === 'bar' ? 6 : 0,
-                            tension: 0.3,
-                            fill: currentChartType === 'line'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                font: { family: 'Inter', size: 12 },
-                                usePointStyle: true,
-                                boxWidth: 8
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += formatRupiah(context.parsed.y);
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                font: { family: 'Inter', size: 10 },
-                                callback: function(value) {
-                                    if (value >= 1000000) return (value / 1000000) + 'Jt';
-                                    if (value >= 1000) return (value / 1000) + 'Ribu';
-                                    return value;
-                                }
-                            },
-                            grid: { color: '#f1f5f9' }
-                        },
-                        x: {
-                            ticks: { font: { family: 'Inter', size: 10 } },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        function switchChartType(type) {
-            currentChartType = type;
-
-            document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
-                btn.classList.remove('bg-white', 'shadow-xs', 'text-slate-800');
-                btn.classList.add('text-slate-600');
-            });
-
-            const activeBtn = document.getElementById(`chart-type-${type}`);
-            if(activeBtn) {
-                activeBtn.classList.add('bg-white', 'shadow-xs', 'text-slate-800');
-                activeBtn.classList.remove('text-slate-600');
-            }
-
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-            initChart();
-        }
-
-        function updateChartData() {
-            if (!chartInstance) return;
-            const { labels, incomeData, expenseData } = calculate7DaysChartData();
+      <!-- TABEL RIWAYAT TRANSAKSI (7 COLUMNS) -->
+      <div class="lg:col-span-7 glass-card rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+        <div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Riwayat Transaksi Realtime</h2>
+              <p class="text-xs text-slate-500">Tersinkronisasi otomatis dari Firebase Cloud Firestore</p>
+            </div>
             
-            chartInstance.data.labels = labels;
-            chartInstance.data.datasets[0].data = incomeData;
-            chartInstance.data.datasets[1].data = expenseData;
-            chartInstance.update();
+            <!-- Filter Tabs -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button onclick="setFilter('all')" id="filterAll" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white text-slate-800 shadow-sm">Semua</button>
+              <button onclick="setFilter('deposit')" id="filterDeposit" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-slate-800">Deposit</button>
+              <button onclick="setFilter('income')" id="filterIncome" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-slate-800">Masuk</button>
+              <button onclick="setFilter('expense')" id="filterExpense" class="px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-slate-800">Keluar</button>
+            </div>
+          </div>
+
+          <!-- Table Wrapper -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="text-slate-400 font-semibold border-b border-slate-100 uppercase tracking-wider">
+                  <th class="pb-3 pl-2">Tanggal / Kategori</th>
+                  <th class="pb-3">Tipe</th>
+                  <th class="pb-3">Keterangan</th>
+                  <th class="pb-3 text-right">Nominal</th>
+                  <th class="pb-3 text-center pr-2">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="transactionTableBody" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Row items generated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty State Info -->
+        <div id="emptyState" class="hidden py-12 text-center">
+          <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
+            <i class="fa-solid fa-inbox"></i>
+          </div>
+          <p class="text-xs font-semibold text-slate-600">Belum Ada Transaksi</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">Mulai dengan mencatat modal awal atau pemasukan pertamamu.</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 mt-auto">
+    <p>&copy; 2026 Anggaran Cepat. Powered by Firebase Cloud Firestore & Vercel.</p>
+  </footer>
+
+  <!-- FIREBASE SDK v10.8.0 SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, where, orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, onAuthStateChanged, signOut 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 1. KREDENSIAL FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyCVFDI7Q0hOBuk6tzVqfGVnWUUsdsltcvI",
+      authDomain: "anggaran-cepat-app.firebaseapp.com",
+      projectId: "anggaran-cepat-app",
+      storageBucket: "anggaran-cepat-app.firebasestorage.app",
+      messagingSenderId: "578620345071",
+      appId: "1:578620345071:web:1e4a0451f8416fa255a91a"
+    };
+
+    // Inisialisasi Service
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // State Aplikasi
+    let currentUser = null;
+    let transactions = [];
+    let currentFilter = 'all';
+    let currentType = 'income';
+    let chartInstance = null;
+    let activeChartType = 'bar';
+    let isAuthRegisterMode = false;
+    let unsubscribeFirestore = null;
+
+    const categories = {
+      deposit: ["Modal Awal", "Penyertaan Investor", "Injeksi Kas"],
+      income: ["Gaji & Bonus", "Hasil Penjualan", "Investasi", "Project Freelance", "Pemasukan Lainnya"],
+      expense: ["Bahan Baku", "Sewa & Operasional", "Gaji Karyawan", "Pemasaran / Iklan", "Makan & Minum", "Pengeluaran Lainnya"]
+    };
+
+    // LOGIKA AUTHENTICATION
+    onAuthStateChanged(auth, (user) => {
+      const authModal = document.getElementById('authModal');
+      const userInfoContainer = document.getElementById('userInfoContainer');
+      const dbStatusDot = document.getElementById('dbStatusDot');
+      const dbStatusText = document.getElementById('dbStatusText');
+
+      if (user) {
+        currentUser = user;
+        authModal.classList.add('hidden');
+        userInfoContainer.classList.remove('hidden');
+        document.getElementById('userDisplayName').innerText = user.displayName || 'Pengguna';
+        document.getElementById('userDisplayEmail').innerText = user.email;
+
+        dbStatusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+        dbStatusText.innerText = "Firestore Terhubung";
+        dbStatusText.className = "text-emerald-400 font-medium";
+
+        // Realtime Listener per-User
+        listenToTransactions(user.uid);
+      } else {
+        currentUser = null;
+        authModal.classList.remove('hidden');
+        userInfoContainer.classList.add('hidden');
+
+        dbStatusDot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+        dbStatusText.innerText = "Belum Login";
+        dbStatusText.className = "text-amber-400";
+
+        if (unsubscribeFirestore) unsubscribeFirestore();
+        transactions = [];
+        updateUI();
+      }
+    });
+
+    window.handleGoogleLogin = async () => {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (e) {
+        showAuthError(e.message);
+      }
+    };
+
+    window.handleEmailAuth = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+
+      try {
+        if (isAuthRegisterMode) {
+          await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
         }
+      } catch (err) {
+        showAuthError(err.message);
+      }
+    };
 
-        // =================================================================
-        // UI RENDERING LOGIC
-        // =================================================================
-        function renderApp() {
-            calculateSummary();
-            renderTable();
-            updateChartData();
-        }
+    window.toggleAuthMode = () => {
+      isAuthRegisterMode = !isAuthRegisterMode;
+      document.getElementById('btnSubmitAuth').innerText = isAuthRegisterMode ? 'Daftar Akun Baru' : 'Masuk';
+      document.getElementById('btnToggleAuthMode').innerText = isAuthRegisterMode ? 'Sudah punya akun? Masuk di sini' : 'Belum punya akun? Daftar di sini';
+    };
 
-        function calculateSummary() {
-            let totalDeposit = 0;
-            let totalIncome = 0;
-            let totalExpense = 0;
+    window.handleLogout = () => signOut(auth);
 
-            transactions.forEach(item => {
-                const val = Number(item.amount) || 0;
-                if (item.type === 'deposit') {
-                    totalDeposit += val;
-                } else if (item.type === 'income') {
-                    totalIncome += val;
-                } else if (item.type === 'expense') {
-                    totalExpense += val;
-                }
-            });
+    function showAuthError(msg) {
+      const errBox = document.getElementById('authError');
+      errBox.innerText = msg;
+      errBox.classList.remove('hidden');
+    }
 
-            const currentBalance = totalDeposit + totalIncome - totalExpense;
+    // REALTIME FIRESTORE LISTENER (FILTER PER-USER)
+    function listenToTransactions(userId) {
+      const q = query(
+        collection(db, "transactions"), 
+        where("userId", "==", userId),
+        orderBy("date", "desc")
+      );
 
-            document.getElementById('display-balance').textContent = formatRupiah(currentBalance);
-            document.getElementById('display-deposit').textContent = formatRupiah(totalDeposit);
-            document.getElementById('display-income').textContent = formatRupiah(totalIncome);
-            document.getElementById('display-expense').textContent = formatRupiah(totalExpense);
+      unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+        transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateUI();
+      });
+    }
 
-            const statusEl = document.getElementById('balance-status');
-            if (currentBalance < 0) {
-                statusEl.textContent = 'Defisit';
-                statusEl.className = 'font-semibold bg-rose-900/60 px-2 py-0.5 rounded text-rose-200';
-            } else if (currentBalance === 0) {
-                statusEl.textContent = 'Kosong';
-                statusEl.className = 'font-semibold bg-amber-900/60 px-2 py-0.5 rounded text-amber-200';
-            } else {
-                statusEl.textContent = 'Aman';
-                statusEl.className = 'font-semibold bg-indigo-900/50 px-2 py-0.5 rounded text-indigo-200';
-            }
-        }
+    // SIMPAN TRANSAKSI KE FIRESTORE
+    window.handleFormSubmit = async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
 
-        function renderTable() {
-            const tableBody = document.getElementById('transaction-list');
-            const emptyState = document.getElementById('empty-state');
-            tableBody.innerHTML = '';
+      const rawAmount = document.getElementById('inputAmount').value.replace(/\./g, '');
+      const amount = parseFloat(rawAmount);
+      const category = document.getElementById('inputCategory').value;
+      const date = document.getElementById('inputDate').value;
+      const notes = document.getElementById('inputNotes').value.trim();
 
-            const filteredData = transactions.filter(item => {
-                if (currentFilter === 'all') return true;
-                return item.type === currentFilter;
-            });
+      if (!amount || !category || !date) return;
 
-            if (filteredData.length === 0) {
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-                return;
-            } else {
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('flex');
-            }
+      const btnSubmit = document.getElementById('btnSubmit');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...`;
 
-            // Urutkan tanggal terbaru di paling atas
-            filteredData.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            filteredData.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100";
-
-                let badgeHTML = '';
-                let amountClass = '';
-                let amountPrefix = '';
-
-                if (item.type === 'deposit') {
-                    badgeHTML = `<span class="px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 rounded-md">Deposit</span>`;
-                    amountClass = 'text-blue-600 font-bold';
-                    amountPrefix = '+';
-                } else if (item.type === 'income') {
-                    badgeHTML = `<span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md">Masuk</span>`;
-                    amountClass = 'text-emerald-600 font-bold';
-                    amountPrefix = '+';
-                } else if (item.type === 'expense') {
-                    badgeHTML = `<span class="px-2 py-0.5 text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/60 rounded-md">Keluar</span>`;
-                    amountClass = 'text-rose-600 font-bold';
-                    amountPrefix = '-';
-                }
-
-                tr.innerHTML = `
-                    <td class="py-3 px-3">
-                        <div class="font-medium text-slate-800">${item.category}</div>
-                        <div class="text-[10px] text-slate-400">${formatDate(item.date)}</div>
-                    </td>
-                    <td class="py-3 px-3 whitespace-nowrap">
-                        ${badgeHTML}
-                    </td>
-                    <td class="py-3 px-3 text-slate-600 max-w-[180px] truncate">
-                        ${item.notes || '-'}
-                    </td>
-                    <td class="py-3 px-3 text-right whitespace-nowrap ${amountClass}">
-                        ${amountPrefix}${formatRupiah(item.amount)}
-                    </td>
-                    <td class="py-3 px-2 text-center">
-                        <button data-id="${item.id}" class="delete-btn text-slate-300 hover:text-rose-500 p-1.5 transition-colors rounded-lg" title="Hapus Transaksi">
-                            <i class="fa-regular fa-trash-can text-sm"></i>
-                        </button>
-                    </td>
-                `;
-
-                tableBody.appendChild(tr);
-            });
-
-            // Bind click listener for dynamic delete buttons
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const docId = btn.getAttribute('data-id');
-                    deleteTransactionFromFirestore(docId);
-                });
-            });
-        }
-
-        // Filter Table Actions
-        function filterTransactions(type) {
-            currentFilter = type;
-            
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('bg-white', 'shadow-xs', 'text-slate-800');
-                btn.classList.add('text-slate-600');
-            });
-
-            const activeBtn = document.getElementById(`filter-${type}`);
-            if(activeBtn) {
-                activeBtn.classList.add('bg-white', 'shadow-xs', 'text-slate-800');
-                activeBtn.classList.remove('text-slate-600');
-            }
-
-            renderTable();
-        }
-
-        // =================================================================
-        // FIRESTORE CRUD ACTIONS
-        // =================================================================
-        formEl.addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const type = document.querySelector('input[name="type"]:checked').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            const category = document.getElementById('category').value;
-            const date = document.getElementById('date').value;
-            const notes = document.getElementById('notes').value.trim();
-
-            if (!amount || amount <= 0) {
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Menyimpan...</span>`;
-
-            try {
-                await addDoc(collection(db, "transactions"), {
-                    type: type,
-                    amount: amount,
-                    category: category,
-                    date: date,
-                    notes: notes,
-                    createdAt: new Date().toISOString()
-                });
-
-                formEl.reset();
-                document.getElementById('date').valueAsDate = new Date();
-                document.querySelector('input[name="type"][value="income"]').checked = true;
-            } catch (err) {
-                console.error("Error saving to Firestore:", err);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Simpan ke Database</span>`;
-            }
+      try {
+        await addDoc(collection(db, "transactions"), {
+          userId: currentUser.uid,
+          type: currentType,
+          amount,
+          category,
+          date,
+          notes,
+          createdAt: new Date().toISOString()
         });
 
-        async function deleteTransactionFromFirestore(docId) {
-            if (!docId) return;
-            try {
-                await deleteDoc(doc(db, "transactions", docId));
-            } catch (err) {
-                console.error("Error deleting document:", err);
-            }
+        document.getElementById('transactionForm').reset();
+        document.getElementById('inputDate').valueAsDate = new Date();
+        selectType(currentType);
+      } catch (err) {
+        alert("Gagal menyimpan data: " + err.message);
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i><span>Simpan ke Database</span>`;
+      }
+    };
+
+    window.deleteTransaction = async (id) => {
+      if (confirm("Hapus transaksi ini dari Cloud Database?")) {
+        try {
+          await deleteDoc(doc(db, "transactions", id));
+        } catch (err) {
+          alert("Gagal menghapus: " + err.message);
+        }
+      }
+    };
+
+    // UI RENDERERS & HELPERS
+    function updateUI() {
+      renderSummaryCards();
+      renderTable();
+      renderChart();
+    }
+
+    function renderSummaryCards() {
+      let deposit = 0, income = 0, expense = 0;
+
+      transactions.forEach(t => {
+        const val = Number(t.amount) || 0;
+        if (t.type === 'deposit') deposit += val;
+        else if (t.type === 'income') income += val;
+        else if (t.type === 'expense') expense += val;
+      });
+
+      const totalBalance = (deposit + income) - expense;
+
+      document.getElementById('cardTotalBalance').innerText = formatIDR(totalBalance);
+      document.getElementById('cardDeposit').innerText = formatIDR(deposit);
+      document.getElementById('cardIncome').innerText = formatIDR(income);
+      document.getElementById('cardExpense').innerText = formatIDR(expense);
+
+      const statusBadge = document.getElementById('cardStatusBadge');
+      if (totalBalance < 0) {
+        statusBadge.innerText = 'Defisit';
+        statusBadge.className = 'px-2 py-0.5 rounded bg-rose-500/80 text-white font-medium';
+      } else {
+        statusBadge.innerText = 'Aman';
+        statusBadge.className = 'px-2 py-0.5 rounded bg-indigo-500/50 text-white font-medium';
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('transactionTableBody');
+      const emptyState = document.getElementById('emptyState');
+
+      const filtered = transactions.filter(t => currentFilter === 'all' ? true : t.type === currentFilter);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      tbody.innerHTML = filtered.map(t => {
+        let badgeClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
+        let typeText = "Masuk";
+        let prefix = "+";
+        let amountClass = "text-emerald-600 font-bold";
+
+        if (t.type === 'expense') {
+          badgeClass = "bg-rose-50 text-rose-600 border-rose-100";
+          typeText = "Keluar";
+          prefix = "-";
+          amountClass = "text-rose-600 font-bold";
+        } else if (t.type === 'deposit') {
+          badgeClass = "bg-blue-50 text-blue-600 border-blue-100";
+          typeText = "Deposit";
+          prefix = "+";
+          amountClass = "text-blue-600 font-bold";
         }
 
-        // Attach Chart Toggle Listeners
-        document.getElementById('chart-type-bar').addEventListener('click', () => switchChartType('bar'));
-        document.getElementById('chart-type-line').addEventListener('click', () => switchChartType('line'));
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 pl-2">
+              <div class="font-semibold text-slate-800">${escapeHtml(t.category)}</div>
+              <div class="text-[10px] text-slate-400">${t.date}</div>
+            </td>
+            <td class="py-3">
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badgeClass}">${typeText}</span>
+            </td>
+            <td class="py-3 text-slate-500 max-w-[150px] truncate">${t.notes ? escapeHtml(t.notes) : '-'}</td>
+            <td class="py-3 text-right ${amountClass}">${prefix}${formatIDR(t.amount)}</td>
+            <td class="py-3 text-center pr-2">
+              <button onclick="deleteTransaction('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-1">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
 
-        // Attach Filter Button Listeners
-        document.getElementById('filter-all').addEventListener('click', () => filterTransactions('all'));
-        document.getElementById('filter-deposit').addEventListener('click', () => filterTransactions('deposit'));
-        document.getElementById('filter-income').addEventListener('click', () => filterTransactions('income'));
-        document.getElementById('filter-expense').addEventListener('click', () => filterTransactions('expense'));
+    function renderChart() {
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      const dates = [];
+      const incomes = [];
+      const expenses = [];
 
-        // Bootstrapping App
-        document.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            initRealtimeListener();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        dates.push(dateStr.slice(5));
+
+        let dayInc = 0, dayExp = 0;
+        transactions.forEach(t => {
+          if (t.date === dateStr) {
+            if (t.type === 'income' || t.type === 'deposit') dayInc += Number(t.amount);
+            else if (t.type === 'expense') dayExp += Number(t.amount);
+          }
         });
-    </script>
+
+        incomes.push(dayInc);
+        expenses.push(dayExp);
+      }
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: activeChartType,
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              label: 'Pemasukan / Deposit (Rp)',
+              data: incomes,
+              backgroundColor: activeChartType === 'bar' ? '#10b981' : 'rgba(16, 185, 129, 0.1)',
+              borderColor: '#10b981',
+              borderWidth: 2,
+              borderRadius: 6,
+              fill: activeChartType === 'line'
+            },
+            {
+              label: 'Pengeluaran (Rp)',
+              data: expenses,
+              backgroundColor: activeChartType === 'bar' ? '#f43f5e' : 'rgba(244, 63, 94, 0.1)',
+              borderColor: '#f43f5e',
+              borderWidth: 2,
+              borderRadius: 6,
+              fill: activeChartType === 'line'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1000) + 'k' } }
+          }
+        }
+      });
+    }
+
+    window.selectType = (type) => {
+      currentType = type;
+      ['Deposit', 'Income', 'Expense'].forEach(t => {
+        document.getElementById(`btnType${t}`).classList.remove('type-btn-active');
+      });
+      document.getElementById(`btnType${type.charAt(0).toUpperCase() + type.slice(1)}`).classList.add('type-btn-active');
+
+      const select = document.getElementById('inputCategory');
+      select.innerHTML = '<option value="">Pilih Kategori</option>' +
+        categories[type].map(c => `<option value="${c}">${c}</option>`).join('');
+    };
+
+    window.setFilter = (type) => {
+      currentFilter = type;
+      ['All', 'Deposit', 'Income', 'Expense'].forEach(f => {
+        const btn = document.getElementById(`filter${f}`);
+        btn.className = (f.toLowerCase() === type) 
+          ? "px-2.5 py-1 text-xs font-semibold rounded-lg bg-white text-slate-800 shadow-sm"
+          : "px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-slate-800";
+      });
+      renderTable();
+    };
+
+    window.setChartType = (type) => {
+      activeChartType = type;
+      document.getElementById('btnChartBar').className = type === 'bar' 
+        ? "px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-sm transition"
+        : "px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg hover:text-slate-900 transition";
+      document.getElementById('btnChartLine').className = type === 'line' 
+        ? "px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-sm transition"
+        : "px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg hover:text-slate-900 transition";
+      renderChart();
+    };
+
+    window.formatCurrencyInput = (el) => {
+      let val = el.value.replace(/\D/g, '');
+      el.value = val ? parseInt(val, 10).toLocaleString('id-ID') : '';
+    };
+
+    function formatIDR(num) {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+    }
+
+    // Init App Form
+    document.getElementById('inputDate').valueAsDate = new Date();
+    selectType('income');
+  </script>
 </body>
 </html>
