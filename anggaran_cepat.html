@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anggaran Cepat - Catatan Keuangan Realtime</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-wallet text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none tracking-tight">Anggaran Cepat</h1>
+                    <span class="text-xs text-indigo-400 font-medium">Platform Catatan Keuangan Realtime</span>
+                </div>
+            </div>
+            
+            <!-- Firebase Connection Status Badge -->
+            <div class="flex items-center space-x-3">
+                <div class="flex flex-col text-right">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">Status Database</span>
+                    <span id="db-status" class="text-xs font-semibold text-amber-400 flex items-center justify-end gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Menghubungkan...
+                    </span>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- 1. DASHBOARD RINGKASAN SALDO -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            
+            <!-- Card: Saldo Saat Ini -->
+            <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-2xl p-5 shadow-lg shadow-indigo-200 relative overflow-hidden transition-all duration-300 hover:scale-[1.01]">
+                <div class="absolute -right-4 -bottom-4 opacity-15 text-7xl text-white pointer-events-none">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+                <p class="text-indigo-200 text-xs font-medium uppercase tracking-wider mb-1">Total Saldo Saat Ini</p>
+                <h3 id="display-balance" class="text-2xl sm:text-3xl font-extrabold tracking-tight">Rp 0</h3>
+                <div class="mt-4 pt-3 border-t border-indigo-500/40 flex items-center justify-between text-xs text-indigo-100">
+                    <span>Status Kas:</span>
+                    <span id="balance-status" class="font-semibold bg-indigo-900/50 px-2 py-0.5 rounded text-indigo-200">Aman</span>
+                </div>
+            </div>
+
+            <!-- Card: Modal Awal / Deposit -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Modal Awal / Deposit</span>
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <i class="fa-solid fa-vault text-sm"></i>
+                    </div>
+                </div>
+                <h3 id="display-deposit" class="text-xl sm:text-2xl font-bold text-slate-800">Rp 0</h3>
+                <p class="text-xs text-slate-400 mt-2">Penyertaan dana/modal awal</p>
+            </div>
+
+            <!-- Card: Total Pemasukan -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Pemasukan</span>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-down-left text-sm"></i>
+                    </div>
+                </div>
+                <h3 id="display-income" class="text-xl sm:text-2xl font-bold text-emerald-600">Rp 0</h3>
+                <p class="text-xs text-slate-400 mt-2">Dari seluruh transaksi masuk</p>
+            </div>
+
+            <!-- Card: Total Pengeluaran -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Pengeluaran</span>
+                    <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-up-right text-sm"></i>
+                    </div>
+                </div>
+                <h3 id="display-expense" class="text-xl sm:text-2xl font-bold text-rose-600">Rp 0</h3>
+                <p class="text-xs text-slate-400 mt-2">Dari seluruh belanja/operasional</p>
+            </div>
+
+        </section>
+
+        <!-- 2. CHART VISUAL INTERAKTIF 7 HARI -->
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-indigo-600"></i>
+                        Grafik Keuangan 7 Hari Terakhir
+                    </h2>
+                    <p class="text-xs text-slate-500">Visualisasi tren akumulasi dana masuk & keluar harian</p>
+                </div>
+                <!-- Toggle Button Bar vs Line -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-medium self-start sm:self-auto">
+                    <button id="chart-type-bar" class="chart-toggle-btn px-3 py-1.5 rounded-lg bg-white shadow-xs text-slate-800 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-column"></i>
+                        <span>Grafik Batang</span>
+                    </button>
+                    <button id="chart-type-line" class="chart-toggle-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Grafik Garis</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Chart Container -->
+            <div class="relative w-full h-[260px] sm:h-[300px]">
+                <canvas id="financialChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 3. FORM INPUT & TABEL RIWAYAT -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- FORM INPUT TRANSAKSI (5 Cols) -->
+            <div class="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm sticky top-24">
+                <div class="flex items-center space-x-3 mb-5 pb-3 border-b border-slate-100">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-plus text-sm"></i>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-800">Catat Transaksi Baru</h2>
+                </div>
+
+                <form id="transaction-form" class="space-y-4">
+                    
+                    <!-- Tipe Transaksi -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">Tipe Transaksi</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="deposit" class="peer hidden">
+                                <div class="p-2.5 text-center text-xs font-medium rounded-xl border border-slate-200 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-vault"></i>
+                                    Deposit
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="income" class="peer hidden" checked>
+                                <div class="p-2.5 text-center text-xs font-medium rounded-xl border border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-circle-arrow-down"></i>
+                                    Pemasukan
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="expense" class="peer hidden">
+                                <div class="p-2.5 text-center text-xs font-medium rounded-xl border border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 peer-checked:text-rose-700 transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-circle-arrow-up"></i>
+                                    Pengeluaran
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Nominal / Jumlah -->
+                    <div>
+                        <label for="amount" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Nominal (Rp)</label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-semibold text-sm">
+                                Rp
+                            </div>
+                            <input type="number" id="amount" placeholder="0" min="1" required
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 font-semibold text-base transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Kategori & Tanggal -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label for="category" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Kategori</label>
+                            <select id="category" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-700 transition-all">
+                                <option value="" disabled selected>Pilih Kategori</option>
+                                <option value="Modal Awal">Modal Awal / Injeksi Kas</option>
+                                <option value="Penjualan / Omset">Penjualan / Omset</option>
+                                <option value="Gaji & Bonus">Gaji & Bonus</option>
+                                <option value="Operasional Usaha">Operasional Usaha</option>
+                                <option value="Makanan & Minuman">Makanan & Minuman</option>
+                                <option value="Belanja Stok / Bahan">Belanja Stok / Bahan</option>
+                                <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="date" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Tanggal</label>
+                            <input type="date" id="date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-700 transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Catatan Tambahan -->
+                    <div>
+                        <label for="notes" class="block text-xs font-semibold text-slate-600 mb-1 uppercase">Catatan (Keterangan)</label>
+                        <input type="text" id="notes" placeholder="Contoh: Pembelian bahan baku resep A" 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs text-slate-700 transition-all">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submit-btn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Simpan ke Database</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- 4. TABEL RIWAYAT TRANSAKSI (7 Cols) -->
+            <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                
+                <!-- Table Header & Filters -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">Riwayat Transaksi Realtime</h2>
+                        <p class="text-xs text-slate-500">Tersinkronisasi otomatis dari Firebase Cloud Firestore</p>
+                    </div>
+
+                    <!-- Filter Type Buttons -->
+                    <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-medium self-start sm:self-auto">
+                        <button id="filter-all" class="filter-btn px-3 py-1.5 rounded-lg bg-white shadow-xs text-slate-800 transition-all">Semua</button>
+                        <button id="filter-deposit" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Deposit</button>
+                        <button id="filter-income" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Masuk</button>
+                        <button id="filter-expense" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Keluar</button>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="overflow-x-auto min-h-[300px] max-h-[500px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 bg-slate-50/50">
+                                <th class="py-2.5 px-3">Tanggal / Kategori</th>
+                                <th class="py-2.5 px-3">Tipe</th>
+                                <th class="py-2.5 px-3">Keterangan</th>
+                                <th class="py-2.5 px-3 text-right">Nominal</th>
+                                <th class="py-2.5 px-2 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list" class="divide-y divide-slate-100 text-xs">
+                            <!-- Data rendered dynamically -->
+                        </tbody>
+                    </table>
+
+                    <!-- Empty State Placeholder -->
+                    <div id="empty-state" class="hidden flex-col items-center justify-center py-12 text-center text-slate-400">
+                        <i class="fa-solid fa-receipt text-4xl mb-3 text-slate-300"></i>
+                        <p class="font-medium text-sm text-slate-600">Belum Ada Transaksi</p>
+                        <p class="text-xs">Gunakan form di samping untuk menyimpan catatan pertama.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-4">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            &copy; 2026 Anggaran Cepat. Powered by Firebase Cloud Firestore & Vercel.
+        </div>
+    </footer>
+
+    <!-- FIREBASE & APPLICATION LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            deleteDoc, 
+            doc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase Milik Pengguna
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVFDI7Q0hOBuk6tzVqfGVnWUUsdsltcvI",
+            authDomain: "anggaran-cepat-app.firebaseapp.com",
+            projectId: "anggaran-cepat-app",
+            storageBucket: "anggaran-cepat-app.firebasestorage.app",
+            messagingSenderId: "578620345071",
+            appId: "1:578620345071:web:1e4a0451f8416fa255a91a"
+        };
+
+        // Inisialisasi Firebase & Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Application State
+        let transactions = [];
+        let currentFilter = 'all';
+        let currentChartType = 'bar';
+        let chartInstance = null;
+        const today = new Date();
+
+        // DOM Elements
+        const dbStatusEl = document.getElementById('db-status');
+        const formEl = document.getElementById('transaction-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // Set default date input into today
+        document.getElementById('date').valueAsDate = today;
+
+        // Formatter Helpers
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(dateStr).toLocaleDateString('id-ID', options);
+        }
+
+        function getYYYYMMDD(dateObj) {
+            return dateObj.toISOString().split('T')[0];
+        }
+
+        // =================================================================
+        // REALTIME DATABASE LISTENER (FIRESTORE)
+        // =================================================================
+        function initRealtimeListener() {
+            // Ref: /artifacts/{appId}/public/data/transactions atau koleksi root publik
+            const transRef = collection(db, "transactions");
+
+            onSnapshot(transRef, (snapshot) => {
+                transactions = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Visual Status Connected
+                dbStatusEl.className = "text-xs font-semibold text-emerald-400 flex items-center justify-end gap-1.5";
+                dbStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Firestore Terhubung`;
+
+                renderApp();
+            }, (error) => {
+                console.error("Firestore Error: ", error);
+                dbStatusEl.className = "text-xs font-semibold text-rose-400 flex items-center justify-end gap-1.5";
+                dbStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> Gagal Terhubung`;
+            });
+        }
+
+        // =================================================================
+        // CHART.JS LOGIC
+        // =================================================================
+        function getLast7DaysLabels() {
+            const labels = [];
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                dates.push(getYYYYMMDD(d));
+                labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }));
+            }
+            return { labels, dates };
+        }
+
+        function calculate7DaysChartData() {
+            const { labels, dates } = getLast7DaysLabels();
+            const incomeData = new Array(7).fill(0);
+            const expenseData = new Array(7).fill(0);
+
+            transactions.forEach(t => {
+                const dateIndex = dates.indexOf(t.date);
+                if (dateIndex !== -1) {
+                    const amount = Number(t.amount) || 0;
+                    if (t.type === 'income' || t.type === 'deposit') {
+                        incomeData[dateIndex] += amount;
+                    } else if (t.type === 'expense') {
+                        expenseData[dateIndex] += amount;
+                    }
+                }
+            });
+
+            return { labels, incomeData, expenseData };
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            const { labels, incomeData, expenseData } = calculate7DaysChartData();
+
+            chartInstance = new Chart(ctx, {
+                type: currentChartType,
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Pemasukan / Deposit (Rp)',
+                            data: incomeData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            borderRadius: currentChartType === 'bar' ? 6 : 0,
+                            tension: 0.3,
+                            fill: currentChartType === 'line'
+                        },
+                        {
+                            label: 'Pengeluaran (Rp)',
+                            data: expenseData,
+                            backgroundColor: 'rgba(244, 63, 94, 0.7)',
+                            borderColor: '#f43f5e',
+                            borderWidth: 2,
+                            borderRadius: currentChartType === 'bar' ? 6 : 0,
+                            tension: 0.3,
+                            fill: currentChartType === 'line'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { family: 'Inter', size: 12 },
+                                usePointStyle: true,
+                                boxWidth: 8
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += formatRupiah(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: { family: 'Inter', size: 10 },
+                                callback: function(value) {
+                                    if (value >= 1000000) return (value / 1000000) + 'Jt';
+                                    if (value >= 1000) return (value / 1000) + 'Ribu';
+                                    return value;
+                                }
+                            },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            ticks: { font: { family: 'Inter', size: 10 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchChartType(type) {
+            currentChartType = type;
+
+            document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-xs', 'text-slate-800');
+                btn.classList.add('text-slate-600');
+            });
+
+            const activeBtn = document.getElementById(`chart-type-${type}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-white', 'shadow-xs', 'text-slate-800');
+                activeBtn.classList.remove('text-slate-600');
+            }
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            initChart();
+        }
+
+        function updateChartData() {
+            if (!chartInstance) return;
+            const { labels, incomeData, expenseData } = calculate7DaysChartData();
+            
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = incomeData;
+            chartInstance.data.datasets[1].data = expenseData;
+            chartInstance.update();
+        }
+
+        // =================================================================
+        // UI RENDERING LOGIC
+        // =================================================================
+        function renderApp() {
+            calculateSummary();
+            renderTable();
+            updateChartData();
+        }
+
+        function calculateSummary() {
+            let totalDeposit = 0;
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            transactions.forEach(item => {
+                const val = Number(item.amount) || 0;
+                if (item.type === 'deposit') {
+                    totalDeposit += val;
+                } else if (item.type === 'income') {
+                    totalIncome += val;
+                } else if (item.type === 'expense') {
+                    totalExpense += val;
+                }
+            });
+
+            const currentBalance = totalDeposit + totalIncome - totalExpense;
+
+            document.getElementById('display-balance').textContent = formatRupiah(currentBalance);
+            document.getElementById('display-deposit').textContent = formatRupiah(totalDeposit);
+            document.getElementById('display-income').textContent = formatRupiah(totalIncome);
+            document.getElementById('display-expense').textContent = formatRupiah(totalExpense);
+
+            const statusEl = document.getElementById('balance-status');
+            if (currentBalance < 0) {
+                statusEl.textContent = 'Defisit';
+                statusEl.className = 'font-semibold bg-rose-900/60 px-2 py-0.5 rounded text-rose-200';
+            } else if (currentBalance === 0) {
+                statusEl.textContent = 'Kosong';
+                statusEl.className = 'font-semibold bg-amber-900/60 px-2 py-0.5 rounded text-amber-200';
+            } else {
+                statusEl.textContent = 'Aman';
+                statusEl.className = 'font-semibold bg-indigo-900/50 px-2 py-0.5 rounded text-indigo-200';
+            }
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('transaction-list');
+            const emptyState = document.getElementById('empty-state');
+            tableBody.innerHTML = '';
+
+            const filteredData = transactions.filter(item => {
+                if (currentFilter === 'all') return true;
+                return item.type === currentFilter;
+            });
+
+            if (filteredData.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            // Urutkan tanggal terbaru di paling atas
+            filteredData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            filteredData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100";
+
+                let badgeHTML = '';
+                let amountClass = '';
+                let amountPrefix = '';
+
+                if (item.type === 'deposit') {
+                    badgeHTML = `<span class="px-2 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 rounded-md">Deposit</span>`;
+                    amountClass = 'text-blue-600 font-bold';
+                    amountPrefix = '+';
+                } else if (item.type === 'income') {
+                    badgeHTML = `<span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-md">Masuk</span>`;
+                    amountClass = 'text-emerald-600 font-bold';
+                    amountPrefix = '+';
+                } else if (item.type === 'expense') {
+                    badgeHTML = `<span class="px-2 py-0.5 text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/60 rounded-md">Keluar</span>`;
+                    amountClass = 'text-rose-600 font-bold';
+                    amountPrefix = '-';
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3">
+                        <div class="font-medium text-slate-800">${item.category}</div>
+                        <div class="text-[10px] text-slate-400">${formatDate(item.date)}</div>
+                    </td>
+                    <td class="py-3 px-3 whitespace-nowrap">
+                        ${badgeHTML}
+                    </td>
+                    <td class="py-3 px-3 text-slate-600 max-w-[180px] truncate">
+                        ${item.notes || '-'}
+                    </td>
+                    <td class="py-3 px-3 text-right whitespace-nowrap ${amountClass}">
+                        ${amountPrefix}${formatRupiah(item.amount)}
+                    </td>
+                    <td class="py-3 px-2 text-center">
+                        <button data-id="${item.id}" class="delete-btn text-slate-300 hover:text-rose-500 p-1.5 transition-colors rounded-lg" title="Hapus Transaksi">
+                            <i class="fa-regular fa-trash-can text-sm"></i>
+                        </button>
+                    </td>
+                `;
+
+                tableBody.appendChild(tr);
+            });
+
+            // Bind click listener for dynamic delete buttons
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const docId = btn.getAttribute('data-id');
+                    deleteTransactionFromFirestore(docId);
+                });
+            });
+        }
+
+        // Filter Table Actions
+        function filterTransactions(type) {
+            currentFilter = type;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-xs', 'text-slate-800');
+                btn.classList.add('text-slate-600');
+            });
+
+            const activeBtn = document.getElementById(`filter-${type}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-white', 'shadow-xs', 'text-slate-800');
+                activeBtn.classList.remove('text-slate-600');
+            }
+
+            renderTable();
+        }
+
+        // =================================================================
+        // FIRESTORE CRUD ACTIONS
+        // =================================================================
+        formEl.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const date = document.getElementById('date').value;
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!amount || amount <= 0) {
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Menyimpan...</span>`;
+
+            try {
+                await addDoc(collection(db, "transactions"), {
+                    type: type,
+                    amount: amount,
+                    category: category,
+                    date: date,
+                    notes: notes,
+                    createdAt: new Date().toISOString()
+                });
+
+                formEl.reset();
+                document.getElementById('date').valueAsDate = new Date();
+                document.querySelector('input[name="type"][value="income"]').checked = true;
+            } catch (err) {
+                console.error("Error saving to Firestore:", err);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Simpan ke Database</span>`;
+            }
+        });
+
+        async function deleteTransactionFromFirestore(docId) {
+            if (!docId) return;
+            try {
+                await deleteDoc(doc(db, "transactions", docId));
+            } catch (err) {
+                console.error("Error deleting document:", err);
+            }
+        }
+
+        // Attach Chart Toggle Listeners
+        document.getElementById('chart-type-bar').addEventListener('click', () => switchChartType('bar'));
+        document.getElementById('chart-type-line').addEventListener('click', () => switchChartType('line'));
+
+        // Attach Filter Button Listeners
+        document.getElementById('filter-all').addEventListener('click', () => filterTransactions('all'));
+        document.getElementById('filter-deposit').addEventListener('click', () => filterTransactions('deposit'));
+        document.getElementById('filter-income').addEventListener('click', () => filterTransactions('income'));
+        document.getElementById('filter-expense').addEventListener('click', () => filterTransactions('expense'));
+
+        // Bootstrapping App
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            initRealtimeListener();
+        });
+    </script>
+</body>
+</html>
