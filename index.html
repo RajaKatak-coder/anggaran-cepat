@@ -333,14 +333,14 @@
       getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // KREDENSIAL FIREBASE
+    // PASTE KREDENSIAL FIREBASE BARU KAMU DI BAWAH INI:
     const firebaseConfig = {
-      apiKey: "AIzaSyCVFDI7Q0hOBuk6tzVqfGVnWUUsdsltcvI",
-      authDomain: "anggaran-cepat-app.firebaseapp.com",
-      projectId: "anggaran-cepat-app",
-      storageBucket: "anggaran-cepat-app.firebasestorage.app",
-      messagingSenderId: "578620345071",
-      appId: "1:578620345071:web:1e4a0451f8416fa255a91a"
+      apiKey: "AIzaSyBT3uqKi5VBK2V9H-6fKfcYIZ4peHHclaY",
+      authDomain: "anggaran-cepat-v2.firebaseapp.com",
+      projectId: "anggaran-cepat-v2",
+      storageBucket: "anggaran-cepat-v2.firebasestorage.app",
+      messagingSenderId: "171817136295",
+      appId: "1:171817136295:web:00961941f28af32cd32b82"
     };
 
     // Inisialisasi Service
@@ -364,7 +364,7 @@
       expense: ["Bahan Baku", "Sewa & Operasional", "Gaji Karyawan", "Pemasaran / Iklan", "Makan & Minum", "Pengeluaran Lainnya"]
     };
 
-    // HELPER FORMAT IDENTIFIER (USERNAME MOUNT TO EMAIL)
+    // HELPER FORMAT IDENTIFIER
     function formatEmailIdentifier(identifier) {
       const clean = identifier.trim().toLowerCase();
       return clean.includes('@') ? clean : `${clean}@anggarancepat.app`;
